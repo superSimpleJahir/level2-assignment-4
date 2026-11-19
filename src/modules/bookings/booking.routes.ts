@@ -3,7 +3,7 @@ import { authenticate, authorize } from "../../middlewares/auth";
 import { validate } from "../../middlewares/validate";
 import { idParamSchema } from "../../utils/commonSchemas";
 import { bookingController } from "./booking.controller";
-import { bookingQuerySchema, createBookingSchema } from "./booking.validation";
+import { bookingQuerySchema, createBookingSchema, technicianUpdateSchema } from "./booking.validation";
 
 const router = Router();
 
@@ -15,3 +15,13 @@ router.get("/:id", validate({ params: idParamSchema }), bookingController.getByI
 router.patch("/:id/cancel", authorize("CUSTOMER"), validate({ params: idParamSchema }), bookingController.cancel);
 
 export default router;
+
+// Mounted at /api/technician/bookings
+export const technicianBookingRoutes = Router();
+technicianBookingRoutes.use(authenticate, authorize("TECHNICIAN"));
+technicianBookingRoutes.get("/", validate({ query: bookingQuerySchema }), bookingController.list);
+technicianBookingRoutes.patch(
+  "/:id",
+  validate({ params: idParamSchema, body: technicianUpdateSchema }),
+  bookingController.technicianUpdate,
+);

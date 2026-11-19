@@ -153,4 +153,48 @@ const cancel = async (customerId: string, id: string) => {
   });
 };
 
-export const bookingService = { create, listForUser, getById, cancel };
+// ---------------- Technician side ----------------
+
+// Which status can follow which. PAID is only reachable through Stripe,
+// so a technician can never start a job that has not been paid for.
+const TECHNICIAN_TRANSITIONS: Partial<Record<BookingStatus, BookingStatus[]>> = {
+  REQUESTED: ["ACCEPTED", "DECLINED"],
+  PAID: ["IN_PROGRESS"],
+  IN_PROGRESS: ["COMPLETED"],
+};
+
+const updateByTechnician = async (
+  technicianUserId: string,
+  id: string,
+  input: { status: BookingStatus; declineReason?: string },
+) => {
+  const booking = await prisma.booking.findUnique({
+    where: { id },
+    include: { technician: { select: { userId: true } } },
+  });
+  if (!booking || booking.technician.userId !== technicianUserId) throw ApiError.notFound("Booking not found");
+
+  const allowed = TECHNICIAN_TRANSITIONS[booking.status] ?? [];
+  if (!allowed.includes(input.status)) {
+    throw ApiError.badRequest(`Cannot change a booking from ${booking.status} to ${input.status}`, {
+      currentStatus: booking.status,
+      allowedNext: allowed,
+    });
+  }
+
+  // Accepting reserves the slot, so make sure nothing else took it meanwhile
+  if (input.status === "ACCEPTED" && !(await isSlotFree(booking.technicianId, booking.scheduledAt, booking.endsAt, booking.id))) {
+    throw ApiError.conflict("You already have another accepted job overlapping this time");
+  }
+
+  return prisma.booking.update({
+    where: { id },
+    data: {
+      status: input.status,
+      declineReason: input.status === "DECLINED" ? input.declineReason : undefined,
+    },
+    include: bookingInclude,
+  });
+};
+
+export const bookingService = { create, listForUser, getById, cancel, updateByTechnician };

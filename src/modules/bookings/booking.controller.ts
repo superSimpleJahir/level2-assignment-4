@@ -22,4 +22,9 @@ const cancel = catchAsync(async (req, res) => {
   sendResponse(res, { message: "Booking cancelled", data });
 });
 
-export const bookingController = { create, list, getById, cancel };
+const technicianUpdate = catchAsync(async (req, res) => {
+  const data = await bookingService.updateByTechnician(req.user!.id, req.params.id, req.body);
+  sendResponse(res, { message: `Booking marked as ${data.status}`, data });
+});
+
+export const bookingController = { create, list, getById, cancel, technicianUpdate };
