@@ -52,6 +52,7 @@ model TechnicianProfile {
 
   user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   availability AvailabilitySlot[]
+  services     Service[]
 
   @@index([city])
   @@index([ratingAvg])
@@ -59,15 +60,48 @@ model TechnicianProfile {
 
 // Weekly recurring slot, e.g. every Monday 09:00 - 17:00 (UTC)
 model AvailabilitySlot {
-  id            String   @id @default(cuid())
-  technicianId  String
-  dayOfWeek     Int // 0 = Sunday ... 6 = Saturday
-  startTime     String // "HH:mm"
-  endTime       String // "HH:mm"
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  technicianId String
+  dayOfWeek    Int // 0 = Sunday ... 6 = Saturday
+  startTime    String // "HH:mm"
+  endTime      String // "HH:mm"
+  createdAt    DateTime @default(now())
 
   technician TechnicianProfile @relation(fields: [technicianId], references: [id], onDelete: Cascade)
 
   @@unique([technicianId, dayOfWeek, startTime])
   @@index([technicianId])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  services Service[]
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  technicianId    String
+  categoryId      String
+  title           String
+  description     String
+  price           Decimal  @db.Decimal(10, 2)
+  durationMinutes Int      @default(60)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  technician TechnicianProfile @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  category   Category          @relation(fields: [categoryId], references: [id])
+
+  @@index([technicianId])
+  @@index([categoryId])
+  @@index([price])
 }
