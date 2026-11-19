@@ -14,7 +14,12 @@ const app = express();
 // Needed on Vercel/Render so rate limiting sees the real client IP
 app.set("trust proxy", 1);
 
-app.use(helmet());
+app.use(
+  helmet({
+    // Otherwise Safari tries to load Swagger UI assets over https on http://localhost
+    contentSecurityPolicy: { directives: { "upgrade-insecure-requests": null } },
+  }),
+);
 app.use(cors());
 if (env.NODE_ENV !== "test") app.use(morgan("dev"));
 
