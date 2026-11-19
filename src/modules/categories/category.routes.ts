@@ -2,7 +2,8 @@ import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth";
 import { validate } from "../../middlewares/validate";
 import { categoryController } from "./category.controller";
-import { createCategorySchema, idParamSchema, updateCategorySchema } from "./category.validation";
+import { idParamSchema } from "../../utils/commonSchemas";
+import { createCategorySchema, updateCategorySchema } from "./category.validation";
 
 // GET /api/categories
 export const publicCategoryRoutes = Router();

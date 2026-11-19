@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth";
 import { validate } from "../../middlewares/validate";
-import { idParamSchema } from "../categories/category.validation";
+import { idParamSchema } from "../../utils/commonSchemas";
 import { technicianController, technicianServiceController } from "./technician.controller";
 import { availabilitySchema, createServiceSchema, updateProfileSchema, updateServiceSchema } from "./technician.validation";
 

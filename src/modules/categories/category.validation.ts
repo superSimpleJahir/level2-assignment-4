@@ -15,7 +15,3 @@ export const updateCategorySchema = z
   })
   .partial()
   .refine((data) => Object.keys(data).length > 0, { message: "Provide at least one field to update" });
-
-export const idParamSchema = z.object({
-  id: z.string().min(1, "id is required"),
-});
