@@ -22,15 +22,15 @@ Pay securely with Stripe, track every job, and leave a review when it's done.
 
 | Item | Link / Value |
 |------|--------------|
-| **Backend repo** | `<your GitHub repo URL>` |
-| **Live API** | `<your deployed URL>` &nbsp;→&nbsp; health check at `/api/health` |
-| **API docs (Swagger)** | `<your deployed URL>/api/docs` |
-| **API docs (Postman)** | [`docs/FixItNow.postman_collection.json`](./docs/FixItNow.postman_collection.json) |
+| **Backend repo** | https://github.com/superSimpleJahir/level2-assignment-4 |
+| **Live API** | https://fixitnow-backend-gilt.vercel.app &nbsp;→&nbsp; [health check](https://fixitnow-backend-gilt.vercel.app/api/health) |
+| **API docs (Swagger)** | https://fixitnow-backend-gilt.vercel.app/api/docs |
+| **API docs (Postman)** | [`docs/FixItNow.postman_collection.json`](./docs/FixItNow.postman_collection.json) — import it and set `baseUrl` to `https://fixitnow-backend-gilt.vercel.app/api` |
 | **Demo video** | `<your video link>` |
 
 ### 🔑 Demo accounts
 
-All of these are created by the seed script (`npm run db:seed`).
+These work on the live API above and are created by the seed script (`npm run db:seed`).
 
 | Role | Email | Password |
 |------|-------|----------|
