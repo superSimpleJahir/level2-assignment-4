@@ -1,4 +1,5 @@
 import { Router } from "express";
+import swaggerRoutes from "../docs/swagger";
 import adminRoutes from "../modules/admin/admin.routes";
 import authRoutes from "../modules/auth/auth.routes";
 import bookingRoutes, { technicianBookingRoutes } from "../modules/bookings/booking.routes";
@@ -18,6 +19,7 @@ router.get("/health", (_req, res) => {
   });
 });
 
+router.use(swaggerRoutes);
 router.use("/auth", authRoutes);
 router.use("/categories", publicCategoryRoutes);
 router.use("/admin", adminRoutes);
