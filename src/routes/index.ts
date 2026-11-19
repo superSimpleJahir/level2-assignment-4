@@ -1,11 +1,12 @@
 import { Router } from "express";
+import adminRoutes from "../modules/admin/admin.routes";
 import authRoutes from "../modules/auth/auth.routes";
 import bookingRoutes, { technicianBookingRoutes } from "../modules/bookings/booking.routes";
 import { serviceRoutes, technicianBrowseRoutes } from "../modules/browse/browse.routes";
 import paymentRoutes from "../modules/payments/payment.routes";
 import reviewRoutes from "../modules/reviews/review.routes";
 import technicianRoutes from "../modules/technician/technician.routes";
-import { adminCategoryRoutes, publicCategoryRoutes } from "../modules/categories/category.routes";
+import { publicCategoryRoutes } from "../modules/categories/category.routes";
 
 const router = Router();
 
@@ -19,7 +20,7 @@ router.get("/health", (_req, res) => {
 
 router.use("/auth", authRoutes);
 router.use("/categories", publicCategoryRoutes);
-router.use("/admin/categories", adminCategoryRoutes);
+router.use("/admin", adminRoutes);
 router.use("/services", serviceRoutes);
 router.use("/technicians", technicianBrowseRoutes);
 router.use("/technician/bookings", technicianBookingRoutes);
