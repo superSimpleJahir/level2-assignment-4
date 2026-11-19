@@ -51,3 +51,23 @@ export const availabilitySchema = z.object({
       }
     }),
 });
+
+export const createServiceSchema = z.object({
+  title: z.string({ required_error: "Title is required" }).trim().min(3, "Title must be at least 3 characters").max(100),
+  description: z.string({ required_error: "Description is required" }).trim().min(10, "Description must be at least 10 characters").max(1000),
+  categoryId: z.string({ required_error: "categoryId is required" }).min(1),
+  price: z.number({ required_error: "Price is required", invalid_type_error: "Price must be a number" }).positive("Price must be greater than 0").max(1000000),
+  durationMinutes: z.number().int().min(15, "Minimum duration is 15 minutes").max(1440, "Maximum duration is 24 hours").default(60),
+});
+
+export const updateServiceSchema = z
+  .object({
+    title: z.string().trim().min(3).max(100),
+    description: z.string().trim().min(10).max(1000),
+    categoryId: z.string().min(1),
+    price: z.number().positive("Price must be greater than 0").max(1000000),
+    durationMinutes: z.number().int().min(15).max(1440),
+    isActive: z.boolean(),
+  })
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, { message: "Provide at least one field to update" });
