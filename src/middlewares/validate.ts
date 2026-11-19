@@ -1,10 +1,10 @@
 import { RequestHandler } from "express";
-import { AnyZodObject } from "zod";
+import { ZodTypeAny } from "zod";
 
 type Schemas = {
-  body?: AnyZodObject;
-  query?: AnyZodObject;
-  params?: AnyZodObject;
+  body?: ZodTypeAny;
+  query?: ZodTypeAny;
+  params?: ZodTypeAny;
 };
 
 // Validates and replaces req.body / req.query / req.params with the parsed

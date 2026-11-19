@@ -19,5 +19,12 @@ const authLimiter = rateLimit({
 router.post("/register", authLimiter, validate({ body: registerSchema }), authController.register);
 router.post("/login", authLimiter, validate({ body: loginSchema }), authController.login);
 router.get("/me", authenticate, authController.getMe);
+router.patch("/me", authenticate, validate({ body: updateProfileSchema }), authController.updateMe);
+router.patch(
+  "/change-password",
+  authenticate,
+  validate({ body: changePasswordSchema }),
+  authController.changePassword,
+);
 
 export default router;
