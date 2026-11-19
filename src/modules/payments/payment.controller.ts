@@ -22,4 +22,14 @@ const webhook = catchAsync(async (req, res) => {
   res.status(200).json({ success: true, message: "Webhook processed", data: result });
 });
 
-export const paymentController = { create, confirm, webhook };
+const list = catchAsync(async (req, res) => {
+  const { data, meta } = await paymentService.list(req.user!, req.query as never);
+  sendResponse(res, { message: "Payments fetched successfully", data, meta });
+});
+
+const getById = catchAsync(async (req, res) => {
+  const data = await paymentService.getById(req.user!, req.params.id);
+  sendResponse(res, { message: "Payment fetched successfully", data });
+});
+
+export const paymentController = { create, confirm, webhook, list, getById };

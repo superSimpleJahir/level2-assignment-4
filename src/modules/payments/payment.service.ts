@@ -3,6 +3,8 @@ import { env } from "../../config/env";
 import { prisma } from "../../lib/prisma";
 import { getStripe, stripeWebhooks } from "../../lib/stripe";
 import { ApiError } from "../../utils/ApiError";
+import { buildMeta } from "../../utils/pagination";
+import { Prisma, Role } from "@prisma/client";
 
 const CURRENCY = "usd";
 
@@ -82,7 +84,7 @@ const createCheckout = async (customerId: string, bookingId: string) => {
   return { payment, checkoutUrl: session.url, sessionId: session.id };
 };
 
-// Implemented in the refund step below
+// Sends the money back through Stripe and marks the payment REFUNDED
 const refundPayment = async (paymentId: string, reason: string) => {
   const payment = await prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
   if (payment.status !== "COMPLETED" || !payment.transactionId) return payment;
@@ -189,4 +191,84 @@ const handleWebhook = async (rawBody: Buffer, signature: string | undefined) => 
   return { received: true, type: event.type };
 };
 
-export const paymentService = { createCheckout, confirm, handleWebhook };
+// ---------------- History & details ----------------
+
+const paymentInclude = {
+  booking: {
+    select: {
+      id: true,
+      status: true,
+      scheduledAt: true,
+      service: { select: { id: true, title: true } },
+      technician: { select: { id: true, user: { select: { id: true, name: true } } } },
+    },
+  },
+} satisfies Prisma.PaymentInclude;
+
+type Viewer = { id: string; role: Role };
+
+const list = async (user: Viewer, query: { status?: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED"; page: number; limit: number }) => {
+  // Customers see what they paid, technicians see payments for their jobs, admins see everything
+  const owner: Prisma.PaymentWhereInput =
+    user.role === "CUSTOMER"
+      ? { userId: user.id }
+      : user.role === "TECHNICIAN"
+        ? { booking: { technician: { userId: user.id } } }
+        : {};
+
+  const where: Prisma.PaymentWhereInput = { ...owner, ...(query.status ? { status: query.status } : {}) };
+
+  const [total, data] = await prisma.$transaction([
+    prisma.payment.count({ where }),
+    prisma.payment.findMany({
+      where,
+      include: paymentInclude,
+      orderBy: { createdAt: "desc" },
+      skip: (query.page - 1) * query.limit,
+      take: query.limit,
+    }),
+  ]);
+
+  return { data, meta: buildMeta(query.page, query.limit, total) };
+};
+
+const getById = async (user: Viewer, id: string) => {
+  const payment = await prisma.payment.findUnique({
+    where: { id },
+    include: {
+      ...paymentInclude,
+      booking: {
+        select: { ...paymentInclude.booking.select, technician: { select: { id: true, userId: true, user: { select: { id: true, name: true } } } } },
+      },
+    },
+  });
+  if (!payment) throw ApiError.notFound("Payment not found");
+
+  const allowed =
+    user.role === "ADMIN" || payment.userId === user.id || payment.booking.technician.userId === user.id;
+  if (!allowed) throw ApiError.notFound("Payment not found");
+
+  return payment;
+};
+
+// ---------------- Cancelling a booking that is already paid ----------------
+
+const refundForBooking = async (bookingId: string) => {
+  const payment = await prisma.payment.findFirst({ where: { bookingId, status: "COMPLETED" } });
+  if (payment) await refundPayment(payment.id, "Booking cancelled by customer");
+};
+
+// Stops a customer paying through an old Stripe page after the booking was cancelled
+const expirePendingSessions = async (bookingId: string) => {
+  const pending = await prisma.payment.findMany({ where: { bookingId, status: "PENDING" } });
+  for (const payment of pending) {
+    try {
+      await getStripe().checkout.sessions.expire(payment.checkoutSession);
+    } catch {
+      // already expired or completed - nothing to do
+    }
+    await prisma.payment.update({ where: { id: payment.id }, data: { status: "FAILED", failureReason: "Booking cancelled" } });
+  }
+};
+
+export const paymentService = { createCheckout, confirm, handleWebhook, list, getById, refundForBooking, expirePendingSessions };
