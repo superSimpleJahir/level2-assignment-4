@@ -11,4 +11,15 @@ const create = catchAsync(async (req, res) => {
   });
 });
 
-export const paymentController = { create };
+const confirm = catchAsync(async (req, res) => {
+  const data = await paymentService.confirm(req.user!.id, req.body.sessionId);
+  sendResponse(res, { message: "Payment confirmed. Your booking is now paid.", data });
+});
+
+// Mounted in app.ts with express.raw(), req.body is a Buffer here
+const webhook = catchAsync(async (req, res) => {
+  const result = await paymentService.handleWebhook(req.body, req.headers["stripe-signature"] as string | undefined);
+  res.status(200).json({ success: true, message: "Webhook processed", data: result });
+});
+
+export const paymentController = { create, confirm, webhook };
