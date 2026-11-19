@@ -482,18 +482,41 @@ If `STRIPE_SECRET_KEY` is empty, the script simulates Stripe by sending a **corr
 
 ## ☁️ Deployment
 
-### Vercel
+### Vercel (what this project uses)
 
-1. Create a hosted PostgreSQL database (Neon, Supabase, Railway...) and copy its connection string.
-2. Apply migrations and seed it once from your machine:
+1. **Database:** create a free PostgreSQL database on [Neon](https://neon.tech) (or Supabase / Railway) and copy the connection string.
+2. **Create the tables and demo data once, from your machine.** Use the *direct* (non-pooled) connection string for migrations:
    ```bash
-   DATABASE_URL="<production-url>" npx prisma migrate deploy
-   DATABASE_URL="<production-url>" npm run db:seed
+   DATABASE_URL="<direct-url>" npx prisma migrate deploy
+   DATABASE_URL="<direct-url>" npm run db:seed
    ```
-3. Push the repo to GitHub and import it in Vercel.
-4. Add the environment variables from the table above (`DATABASE_URL`, `JWT_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `CLIENT_URL`, ...).
-5. Deploy. `vercel.json` routes every request to `api/index.ts`.
-6. In the Stripe dashboard add a webhook endpoint `https://<your-app>.vercel.app/api/payments/webhook` listening to `checkout.session.completed`, `checkout.session.expired` and `checkout.session.async_payment_failed`, then copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+3. **Deploy.** Either import the GitHub repo at [vercel.com/new](https://vercel.com/new), or use the CLI:
+   ```bash
+   npm i -g vercel
+   vercel link
+   vercel deploy --prod
+   ```
+4. **Environment variables** (Project → Settings → Environment Variables, or `vercel env add <NAME> production`):
+
+   | Name | Value |
+   |------|-------|
+   | `DATABASE_URL` | Neon *pooled* string, ending in `?sslmode=require` |
+   | `JWT_SECRET` | `openssl rand -hex 32` |
+   | `NODE_ENV` | `production` |
+   | `STRIPE_SECRET_KEY` | `sk_test_...` |
+   | `STRIPE_WEBHOOK_SECRET` | signing secret of the **production** webhook endpoint (next step) |
+   | `CLIENT_URL` | your frontend URL (or `http://localhost:3000`) |
+
+5. **Stripe webhook for production.** In the Stripe dashboard go to *Developers → Webhooks → Add endpoint*:
+   - URL: `https://<your-app>.vercel.app/api/payments/webhook`
+   - Events: `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`
+
+   Put the endpoint's signing secret (`whsec_...`) into `STRIPE_WEBHOOK_SECRET` and **redeploy**. The `whsec_` printed by `stripe listen` only works locally.
+6. **Check it:** open `/api/health` and `/api/docs`, log in as the admin, then run one real test payment.
+
+`vercel.json` routes every request to `api/index.ts` and runs `npm install --include=dev`, because with `NODE_ENV=production` Vercel would otherwise skip `prisma` and the `@types/*` packages that the build needs.
+
+> **Heads up:** Swagger UI loads its assets from a CDN (jsdelivr) because Vercel's serverless bundle doesn't include the files `swagger-ui-express` serves from `node_modules`.
 
 ### Render (alternative)
 
