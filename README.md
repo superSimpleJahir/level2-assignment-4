@@ -369,15 +369,18 @@ Both the webhook and `/payments/confirm` end in the same idempotent function, so
 ### Try it with Stripe test mode
 
 1. Create a free Stripe account and switch to **Test mode**.
-2. Copy your secret key into `.env`: `STRIPE_SECRET_KEY=sk_test_...`
+2. Open **Developers → API keys**, copy the **Secret key** into `.env`: `STRIPE_SECRET_KEY=sk_test_...` (never commit it, `.env` is gitignored).
 3. Forward webhooks to your machine with the [Stripe CLI](https://stripe.com/docs/stripe-cli):
    ```bash
-   stripe listen --forward-to localhost:4000/api/payments/webhook
+   stripe login
+   stripe listen \
+     --events checkout.session.completed,checkout.session.expired,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed \
+     --forward-to localhost:4000/api/payments/webhook
    ```
-   Copy the `whsec_...` it prints into `STRIPE_WEBHOOK_SECRET` and restart the server.
+   Copy the `whsec_...` it prints into `STRIPE_WEBHOOK_SECRET` and restart the server. Keep this terminal open while testing.
 4. Log in as a customer, create a booking, log in as the technician and accept it.
 5. Call `POST /payments/create` with the `bookingId`, then open the returned `checkoutUrl`.
-6. Pay with the test card **`4242 4242 4242 4242`**, any future expiry, any CVC.
+6. Pay with the test card **`4242 4242 4242 4242`**, any future expiry (e.g. `12/34`), any CVC. After paying, Stripe redirects to `CLIENT_URL/payment/success?session_id=...` — there is no frontend in this project, so that page won't load, which is fine.
 7. Check `GET /bookings/:id` — the status is now `PAID`, and `GET /payments` shows a `COMPLETED` payment with its Stripe transaction id.
 
 **Payment statuses:** `PENDING` → `COMPLETED` · `FAILED` · `REFUNDED`
