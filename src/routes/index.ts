@@ -3,6 +3,7 @@ import authRoutes from "../modules/auth/auth.routes";
 import bookingRoutes, { technicianBookingRoutes } from "../modules/bookings/booking.routes";
 import { serviceRoutes, technicianBrowseRoutes } from "../modules/browse/browse.routes";
 import paymentRoutes from "../modules/payments/payment.routes";
+import reviewRoutes from "../modules/reviews/review.routes";
 import technicianRoutes from "../modules/technician/technician.routes";
 import { adminCategoryRoutes, publicCategoryRoutes } from "../modules/categories/category.routes";
 
@@ -25,5 +26,6 @@ router.use("/technician/bookings", technicianBookingRoutes);
 router.use("/technician", technicianRoutes);
 router.use("/bookings", bookingRoutes);
 router.use("/payments", paymentRoutes);
+router.use("/reviews", reviewRoutes);
 
 export default router;
