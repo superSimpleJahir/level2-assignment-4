@@ -2,6 +2,7 @@ import { BookingStatus, Prisma, Role } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../utils/ApiError";
 import { buildMeta } from "../../utils/pagination";
+import { paymentService } from "../payments/payment.service";
 
 // A technician cannot be double booked while a job is in one of these states
 export const SLOT_BLOCKING_STATUSES: BookingStatus[] = ["ACCEPTED", "PAID", "IN_PROGRESS"];
@@ -142,8 +143,16 @@ const cancel = async (customerId: string, id: string) => {
   const booking = await prisma.booking.findUnique({ where: { id } });
   if (!booking || booking.customerId !== customerId) throw ApiError.notFound("Booking not found");
 
-  if (!["REQUESTED", "ACCEPTED"].includes(booking.status)) {
+  // Customers may cancel any time before the technician starts the job
+  if (!["REQUESTED", "ACCEPTED", "PAID"].includes(booking.status)) {
     throw ApiError.badRequest(`A booking that is ${booking.status} cannot be cancelled`);
+  }
+
+  if (booking.status === "PAID") {
+    // Money first: if the refund fails we leave the booking untouched
+    await paymentService.refundForBooking(id);
+  } else if (booking.status === "ACCEPTED") {
+    await paymentService.expirePendingSessions(id);
   }
 
   return prisma.booking.update({
