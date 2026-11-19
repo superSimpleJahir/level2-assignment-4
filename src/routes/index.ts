@@ -1,5 +1,6 @@
 import { Router } from "express";
 import authRoutes from "../modules/auth/auth.routes";
+import { adminCategoryRoutes, publicCategoryRoutes } from "../modules/categories/category.routes";
 
 const router = Router();
 
@@ -12,5 +13,7 @@ router.get("/health", (_req, res) => {
 });
 
 router.use("/auth", authRoutes);
+router.use("/categories", publicCategoryRoutes);
+router.use("/admin/categories", adminCategoryRoutes);
 
 export default router;
