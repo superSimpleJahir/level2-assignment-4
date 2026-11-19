@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  TECHNICIAN
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+}
+
+model User {
+  id        String     @id @default(cuid())
+  name      String
+  email     String     @unique
+  password  String
+  phone     String?
+  address   String?
+  role      Role       @default(CUSTOMER)
+  status    UserStatus @default(ACTIVE)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  technicianProfile TechnicianProfile?
+
+  @@index([role])
+  @@index([status])
+}
+
+model TechnicianProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  headline        String?
+  bio             String?
+  skills          String[]
+  experienceYears Int      @default(0)
+  hourlyRate      Decimal  @default(0) @db.Decimal(10, 2)
+  city            String?
+  ratingAvg       Float    @default(0)
+  reviewCount     Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  availability AvailabilitySlot[]
+
+  @@index([city])
+  @@index([ratingAvg])
+}
+
+// Weekly recurring slot, e.g. every Monday 09:00 - 17:00 (UTC)
+model AvailabilitySlot {
+  id            String   @id @default(cuid())
+  technicianId  String
+  dayOfWeek     Int // 0 = Sunday ... 6 = Saturday
+  startTime     String // "HH:mm"
+  endTime       String // "HH:mm"
+  createdAt     DateTime @default(now())
+
+  technician TechnicianProfile @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+
+  @@unique([technicianId, dayOfWeek, startTime])
+  @@index([technicianId])
+}
